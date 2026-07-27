@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Luxury Jewellery",
+    "slug": "luxury-jewellery",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "luxuryjewellery",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FAF7F2",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAF7F2"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.luxuryjewellery.app"
+    },
+    "android": {
+      "package": "com.luxuryjewellery.app",
+      "edgeToEdgeEnabled": true,
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#FAF7F2",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-image"
+    ],
+    "extra": {
+      "apiUrl": "http://192.168.31.70:8000/api",
+      "eas": {
+        "projectId": "3b976646-396a-475e-967a-d32dcc4c2342"
+      }
+    },
+    "owner": "prajwal31"
+  }
+}
