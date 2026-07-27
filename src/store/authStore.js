@@ -46,6 +46,25 @@ const useAuthStore = create(
         }
       },
 
+      googleLogin: async (credential, referralCode) => {
+        set({ loading: true });
+        try {
+          const { data } = await authAPI.googleAuth({
+            credential,
+            referralCode: referralCode || undefined,
+          });
+          await AsyncStorage.setItem(TOKEN_KEY, data.token);
+          set({ user: data.data, token: data.token, loading: false, authReady: true });
+          toast.success('Welcome!');
+          useWishlistStore.getState().syncFromServer().catch(() => {});
+          return data.data;
+        } catch (error) {
+          set({ loading: false });
+          toast.error(error?.message || 'Google sign-in failed');
+          throw error;
+        }
+      },
+
       register: async (payload) => {
         set({ loading: true });
         try {

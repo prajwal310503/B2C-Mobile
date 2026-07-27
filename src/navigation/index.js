@@ -1,6 +1,7 @@
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import * as Linking from 'expo-linking';
 
 import TabBar from './TabBar';
 import { colors } from '../theme';
@@ -24,6 +25,8 @@ import ReferScreen from '../screens/ReferScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import ResetPasswordScreen from '../screens/ResetPasswordScreen';
+import VerifyEmailScreen from '../screens/VerifyEmailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import BlogScreen from '../screens/BlogScreen';
 import BlogDetailScreen from '../screens/BlogDetailScreen';
@@ -40,6 +43,39 @@ const Stack = createNativeStackNavigator();
 const navTheme = {
   ...DefaultTheme,
   colors: { ...DefaultTheme.colors, background: colors.cream, primary: colors.primary },
+};
+
+const linking = {
+  prefixes: [Linking.createURL('/'), 'luxuryjewellery://', 'https://royalbutterfly.in'],
+  config: {
+    screens: {
+      Tabs: {
+        screens: {
+          Home: '',
+          Shop: 'shop',
+          Wishlist: 'wishlist',
+          Cart: 'cart',
+          Account: 'account',
+        },
+      },
+      Product: 'products/:slug',
+      Category: 'collections/:slug',
+      Search: 'search',
+      Checkout: 'checkout',
+      Orders: 'orders',
+      OrderDetail: 'orders/:id',
+      ResetPassword: 'reset-password/:token',
+      VerifyEmail: 'verify-email/:token',
+      Register: 'register',
+      Login: 'login',
+      Blog: 'blog',
+      BlogDetail: 'blog/:slug',
+      Stores: 'stores',
+      StoreDetail: 'stores/:slug',
+      BecomeSeller: 'become-a-seller',
+      Refer: 'refer-and-earn',
+    },
+  },
 };
 
 function Tabs() {
@@ -59,7 +95,7 @@ function Tabs() {
 
 export default function RootNavigator() {
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} linking={linking}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
@@ -102,6 +138,8 @@ export default function RootNavigator() {
         />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+        <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

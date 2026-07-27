@@ -20,13 +20,16 @@ const STEPS = [
 export default function ReferScreen() {
   const [info, setInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [payoutBusy, setPayoutBusy] = useState(false);
 
-  useEffect(() => {
+  const reload = () =>
     authAPI
       .getReferral()
       .then(({ data }) => setInfo(data.data))
-      .catch(() => setInfo(null))
-      .finally(() => setLoading(false));
+      .catch(() => setInfo(null));
+
+  useEffect(() => {
+    reload().finally(() => setLoading(false));
   }, []);
 
   const copyCode = async () => {
@@ -40,6 +43,19 @@ export default function ReferScreen() {
     Share.share({
       message: `Shop certified fine jewellery at Luxury Jewellery. Use my code ${info.referralCode} — ${info.shareLink}`,
     }).catch(() => {});
+  };
+
+  const requestPayout = async () => {
+    setPayoutBusy(true);
+    try {
+      await authAPI.requestReferralPayout({ method: 'wallet' });
+      toast.success('Payout requested');
+      await reload();
+    } catch (error) {
+      toast.error(error?.message || 'Could not request payout');
+    } finally {
+      setPayoutBusy(false);
+    }
   };
 
   if (loading) {
@@ -104,6 +120,16 @@ export default function ReferScreen() {
         </View>
 
         <Button label="Share invite" icon="share-social-outline" onPress={share} full />
+        {(info.eligibleTotal || 0) > 0 ? (
+          <Button
+            label={`Request payout · ${formatPrice(info.eligibleTotal)}`}
+            variant="outline"
+            icon="wallet-outline"
+            loading={payoutBusy}
+            onPress={requestPayout}
+            full
+          />
+        ) : null}
 
         <View style={[styles.card, shadows.xs]}>
           <Text style={styles.cardTitle}>How it works</Text>

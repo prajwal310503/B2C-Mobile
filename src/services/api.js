@@ -78,6 +78,11 @@ export const authAPI = {
   logout: () => api.post('/auth/logout'),
   getMe: () => api.get('/auth/me'),
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (token, password) => api.put(`/auth/reset-password/${token}`, { password }),
+  verifyEmail: (token) => api.get(`/auth/verify-email/${token}`),
+  resendVerification: (email) => api.post('/auth/resend-verification', { email }),
+  googleAuth: (data) => api.post('/auth/google', data),
+  getGoogleClientId: () => api.get('/auth/google/client-id'),
   updatePassword: (data) => api.put('/auth/update-password', data),
   updateProfile: (data) => api.put('/auth/profile', data),
   updateAddresses: (addresses) => api.put('/auth/addresses', { addresses }),
@@ -112,6 +117,8 @@ export const orderAPI = {
   requestCancel: (id, data) => api.post(`/orders/${id}/cancel-request`, data),
   requestReturn: (id, data) => api.post(`/orders/${id}/return-request`, data),
   payRemaining: (id) => api.post(`/orders/${id}/pay-remaining`),
+  downloadInvoice: (id) =>
+    api.get(`/orders/${id}/invoice`, { responseType: 'arraybuffer' }),
 };
 
 export const cmsAPI = {

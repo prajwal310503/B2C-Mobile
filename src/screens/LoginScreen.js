@@ -15,6 +15,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Screen from '../components/ui/Screen';
 import Button from '../components/ui/Button';
 import Field from '../components/ui/Field';
+import GoogleSignInButton from '../components/auth/GoogleSignInButton';
 import useAuthStore from '../store/authStore';
 import { colors, gradients, radius, shadows } from '../theme';
 
@@ -22,6 +23,7 @@ export default function LoginScreen() {
   const navigation = useNavigation();
   const { params = {} } = useRoute();
   const login = useAuthStore((s) => s.login);
+  const googleLogin = useAuthStore((s) => s.googleLogin);
   const loading = useAuthStore((s) => s.loading);
 
   const [email, setEmail] = useState('');
@@ -100,6 +102,19 @@ export default function LoginScreen() {
               <Text style={styles.forgotText}>Forgot password?</Text>
             </Pressable>
             <Button label="Sign In" loading={loading} onPress={submit} full />
+            <View style={styles.orRow}>
+              <View style={styles.orLine} />
+              <Text style={styles.orText}>OR</Text>
+              <View style={styles.orLine} />
+            </View>
+            <GoogleSignInButton
+              referralCode={params.referralCode}
+              onSuccess={async (credential, referralCode) => {
+                await googleLogin(credential, referralCode);
+                if (params.redirect) navigation.replace(params.redirect);
+                else navigation.goBack();
+              }}
+            />
           </View>
 
           <View style={styles.footer}>
@@ -150,4 +165,7 @@ const styles = StyleSheet.create({
   footerLink: { fontSize: 13, fontWeight: '700', color: colors.primary },
   forgotWrap: { alignSelf: 'flex-end', marginTop: -4 },
   forgotText: { fontSize: 12.5, fontWeight: '600', color: colors.primary },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
+  orText: { fontSize: 11, fontWeight: '700', color: colors.textFaint, letterSpacing: 1 },
 });

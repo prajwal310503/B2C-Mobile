@@ -32,10 +32,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-image"
+      "expo-image",
+      "expo-web-browser",
+      "expo-sharing"
     ],
     "extra": {
-      "apiUrl": "http://192.168.31.70:8000/api",
+      "apiUrl": "https://api.royalbutterfly.in/api",
+      "googleWebClientId": "1070822068903-146fllmcamqlqt1dg0d6oo9lfk4p33lm.apps.googleusercontent.com",
       "eas": {
         "projectId": "3b976646-396a-475e-967a-d32dcc4c2342"
       }

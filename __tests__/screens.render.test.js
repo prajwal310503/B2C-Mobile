@@ -318,11 +318,16 @@ describe('auth screens', () => {
     expect(await screen.findByText('Sign In')).toBeTruthy();
     expect(screen.getByText('Forgot password?')).toBeTruthy();
     expect(screen.getByText('Create an account')).toBeTruthy();
+    expect(screen.getByText('Continue with Google')).toBeTruthy();
   });
 
-  it('Register renders the sign-up form', async () => {
-    await renderScreen(require('../src/screens/RegisterScreen').default);
+  it('Register renders the sign-up form with optional referral', async () => {
+    await renderScreen(require('../src/screens/RegisterScreen').default, {
+      params: { referralCode: 'TEST500' },
+    });
     expect(await screen.findByPlaceholderText(/you@example.com/i)).toBeTruthy();
+    expect(screen.getByDisplayValue('TEST500')).toBeTruthy();
+    expect(screen.getByText('Continue with Google')).toBeTruthy();
   });
 
   it('Forgot password renders the request form', async () => {
@@ -330,5 +335,13 @@ describe('auth screens', () => {
 
     expect(await screen.findByText('Forgot your password?')).toBeTruthy();
     expect(screen.getByText('Send reset link')).toBeTruthy();
+  });
+
+  it('Reset password renders the new-password form', async () => {
+    await renderScreen(require('../src/screens/ResetPasswordScreen').default, {
+      params: { token: 'reset-token' },
+    });
+    expect(await screen.findByText('Choose a new password')).toBeTruthy();
+    expect(screen.getByText('Update password')).toBeTruthy();
   });
 });

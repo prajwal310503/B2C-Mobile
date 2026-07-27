@@ -15,7 +15,13 @@ jest.mock('axios', () => {
 jest.mock('expo-constants', () => ({
   __esModule: true,
   default: {
-    expoConfig: { extra: { apiUrl: 'http://127.0.0.1:8899/api' }, hostUri: '127.0.0.1:8081' },
+    expoConfig: {
+      extra: {
+        apiUrl: 'http://127.0.0.1:8899/api',
+        googleWebClientId: 'test-google-client.apps.googleusercontent.com',
+      },
+      hostUri: '127.0.0.1:8081',
+    },
   },
 }));
 
@@ -100,5 +106,28 @@ jest.mock('react-native-safe-area-context', () => {
   const mock = require('react-native-safe-area-context/jest/mock');
   return { __esModule: true, ...(mock.default || mock) };
 });
+
+jest.mock('expo-auth-session/providers/google', () => ({
+  useIdTokenAuthRequest: () => [null, null, jest.fn()],
+}));
+
+jest.mock('expo-web-browser', () => ({
+  maybeCompleteAuthSession: jest.fn(),
+  openBrowserAsync: jest.fn(),
+}));
+
+jest.mock('expo-file-system/legacy', () => ({
+  cacheDirectory: 'file:///tmp/',
+  downloadAsync: jest.fn().mockResolvedValue({ status: 200, uri: 'file:///tmp/invoice.pdf' }),
+}));
+
+jest.mock('expo-sharing', () => ({
+  isAvailableAsync: jest.fn().mockResolvedValue(false),
+  shareAsync: jest.fn(),
+}));
+
+jest.mock('expo-linking', () => ({
+  createURL: (path) => `luxuryjewellery://${path}`,
+}));
 
 global.__API_BASE__ = API_BASE;

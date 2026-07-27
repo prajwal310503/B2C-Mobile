@@ -144,17 +144,20 @@ async function main() {
       me.json?.data?.user?.email || `HTTP ${me.status}`
     );
 
-    const productId = products.json?.data?.[0]?._id;
-    if (productId) {
+    const stocked = await request('GET', '/products?limit=20&page=1&inStock=true');
+    const product =
+      (stocked.json?.data || []).find((p) => (Number(p.stock) || 0) > 0) ||
+      (products.json?.data || []).find((p) => (Number(p.stock) || 0) > 0);
+    if (product?._id) {
       const order = await request(
         'POST',
         '/orders',
         {
           items: [
             {
-              product: productId,
-              title: products.json.data[0].title,
-              price: products.json.data[0].discountedPrice || products.json.data[0].price,
+              product: product._id,
+              title: product.title,
+              price: product.discountedPrice || product.price,
               quantity: 1,
             },
           ],
@@ -175,8 +178,17 @@ async function main() {
         order.status >= 200 && order.status < 300 && !!order.json?.data,
         order.json?.message || `HTTP ${order.status}`
       );
+    } else {
+      check('POST /orders place order', false, 'no in-stock product found');
     }
   }
+
+  const googleCfg = await request('GET', '/auth/google/client-id');
+  check(
+    'GET /auth/google/client-id',
+    googleCfg.status === 200 && !!googleCfg.json?.data?.clientId,
+    googleCfg.json?.data?.clientId ? 'configured' : `HTTP ${googleCfg.status}`
+  );
 
   const failed = results.filter((r) => !r.ok);
   console.log(`\nSummary: ${results.length - failed.length}/${results.length} passed\n`);

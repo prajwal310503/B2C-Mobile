@@ -36,6 +36,8 @@ const STUB_ROUTES = [
   'Login',
   'Register',
   'ForgotPassword',
+  'ResetPassword',
+  'VerifyEmail',
 ];
 
 function Stub({ route }) {

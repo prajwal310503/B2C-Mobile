@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Screen from '../components/ui/Screen';
 import AppHeader from '../components/ui/AppHeader';
 import Button from '../components/ui/Button';
 import { StatusPill } from './OrdersScreen';
-import { orderAPI } from '../services/api';
+import { orderAPI, TOKEN_KEY } from '../services/api';
+import { API_BASE } from '../config';
 import { toast } from '../store/toastStore';
 import { colors, formatPrice, radius, shadows } from '../theme';
 
@@ -37,6 +41,7 @@ export default function OrderDetailScreen() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+  const [invoiceBusy, setInvoiceBusy] = useState(false);
 
   const load = () =>
     orderAPI
@@ -72,6 +77,62 @@ export default function OrderDetailScreen() {
     }
   };
 
+  const requestReturn = () => {
+    Alert.prompt
+      ? Alert.prompt(
+          'Return request',
+          'Why are you returning this order?',
+          async (reason) => {
+            if (!reason?.trim()) return;
+            try {
+              await orderAPI.requestReturn(order._id, { reason: reason.trim() });
+              toast.success('Return requested');
+              await load();
+            } catch (error) {
+              toast.error(error?.message || 'Could not request return');
+            }
+          },
+          'plain-text'
+        )
+      : Alert.alert('Return request', 'Submit a return for this delivered order?', [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Request return',
+            onPress: async () => {
+              try {
+                await orderAPI.requestReturn(order._id, { reason: 'Requested from app' });
+                toast.success('Return requested');
+                await load();
+              } catch (error) {
+                toast.error(error?.message || 'Could not request return');
+              }
+            },
+          },
+        ]);
+  };
+
+  const downloadInvoice = async () => {
+    setInvoiceBusy(true);
+    try {
+      const token = await AsyncStorage.getItem(TOKEN_KEY);
+      const url = `${API_BASE.replace(/\/$/, '')}/orders/${order._id}/invoice`;
+      const dest = `${FileSystem.cacheDirectory}invoice-${order.orderNumber || order._id}.pdf`;
+      const result = await FileSystem.downloadAsync(url, dest, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (result.status >= 400) throw new Error('Invoice download failed');
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'Order invoice' });
+      } else {
+        toast.success('Invoice saved');
+      }
+    } catch (error) {
+      toast.error(error?.message || 'Could not download invoice');
+    } finally {
+      setInvoiceBusy(false);
+    }
+  };
+
   if (loading) {
     return (
       <Screen>
@@ -97,6 +158,8 @@ export default function OrderDetailScreen() {
   const activeStep = TIMELINE.indexOf(order.status);
   const address = order.shippingAddress || {};
   const canCancel = ['pending', 'confirmed'].includes(order.status) && !order.cancellationRequest;
+  const canReturn =
+    ['delivered', 'shipped'].includes(order.status) && !order.returnRequest && !isCancelled;
   const needsBalance = order.payment?.status === 'partial';
 
   return (
@@ -212,8 +275,19 @@ export default function OrderDetailScreen() {
               full
             />
           ) : null}
+          <Button
+            label="Download invoice"
+            variant="outline"
+            icon="document-outline"
+            loading={invoiceBusy}
+            onPress={downloadInvoice}
+            full
+          />
           {canCancel ? (
             <Button label="Request cancellation" variant="outline" onPress={requestCancel} full />
+          ) : null}
+          {canReturn ? (
+            <Button label="Request return" variant="outline" onPress={requestReturn} full />
           ) : null}
           <Button
             label="Need help?"
