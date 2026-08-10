@@ -22,7 +22,7 @@ const stores = [
     address: '12 Zaveri Bazaar, Mumbai',
     city: 'Mumbai',
     state: 'Maharashtra',
-    phone: '9004436052',
+    phone: '9594555962',
     email: 'hello@shree.test',
     hoursDisplay: '10:30 am - 9:30 pm',
     facilities: ['Parking', 'Lounge', 'Wheelchair access'],
@@ -249,7 +249,7 @@ const tickets = [
 
 const referral = {
   referralCode: 'TEST500',
-  shareLink: 'https://vkjewellers.com/r/TEST500',
+  shareLink: 'https://royalbutterfly.in/r/TEST500',
   referralBalance: 1500,
   pendingBalance: 500,
   totalReferred: 3,

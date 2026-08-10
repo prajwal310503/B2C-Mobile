@@ -20,18 +20,19 @@ import { supportAPI } from '../services/api';
 import useAuthStore from '../store/authStore';
 import { toast } from '../store/toastStore';
 import { colors, radius, shadows } from '../theme';
+import { COMPANY } from '../config/company';
 
 export const CONTACT = {
-  email: 'care@vkjewellers.com',
-  phone: '+91 9004436052',
-  address: 'Mumbai, Maharashtra, India',
-  mapLink: 'https://www.google.com/maps/search/?api=1&query=Mumbai,Maharashtra,India',
+  email: COMPANY.email,
+  phone: COMPANY.phoneDisplay,
+  address: COMPANY.address,
+  mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(COMPANY.address)}`,
 };
 
 export const PAGES = {
   about: {
     title: 'About Us',
-    content: `VK Jewellers is a multi-vendor jewellery marketplace connecting India's finest jewellery shops with customers nationwide. We curate certified gold, diamond, and gemstone pieces from trusted artisans and established brands.
+    content: `${COMPANY.name} is a multi-vendor jewellery marketplace connecting India's finest jewellery shops with customers nationwide. We curate certified gold, diamond, and gemstone pieces from trusted artisans and established brands.
 
 Our platform combines traditional craftsmanship with modern convenience — browse hundreds of shops, compare designs, and checkout securely from one place.`,
   },
@@ -49,7 +50,7 @@ Payment data is processed securely through Razorpay. We retain order history as 
   },
   terms: {
     title: 'Terms & Conditions',
-    content: `By using VK Jewellers marketplace you agree to these terms. Each vendor is responsible for their listed products, pricing accuracy, and order fulfillment.
+    content: `By using ${COMPANY.name} marketplace you agree to these terms. Each vendor is responsible for their listed products, pricing accuracy, and order fulfillment.
 
 Orders are subject to availability. Returns and exchanges follow individual shop policies and platform guidelines.`,
   },

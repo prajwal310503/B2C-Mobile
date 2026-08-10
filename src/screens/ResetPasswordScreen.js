@@ -22,12 +22,12 @@ export default function ResetPasswordScreen() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [expired, setExpired] = useState(!token);
 
   const submit = async () => {
     const next = {};
     if (password.length < 6) next.password = 'At least 6 characters';
     if (password !== confirm) next.confirm = 'Passwords do not match';
-    if (!token) next.password = 'Reset link is invalid or expired';
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -37,7 +37,12 @@ export default function ResetPasswordScreen() {
       setDone(true);
       toast.success('Password updated');
     } catch (err) {
-      toast.error(err?.message || 'Could not reset password');
+      const msg = err?.message || '';
+      if (/invalid|expired/i.test(msg)) {
+        setExpired(true);
+      } else {
+        toast.error(msg || 'Could not reset password');
+      }
     } finally {
       setLoading(false);
     }
@@ -52,7 +57,11 @@ export default function ResetPasswordScreen() {
       >
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <LinearGradient colors={gradients.champagne} style={styles.icon}>
-            <Ionicons name={done ? 'checkmark-circle' : 'key-outline'} size={28} color={colors.goldDark} />
+            <Ionicons
+              name={done ? 'checkmark-circle' : expired ? 'alert-circle-outline' : 'key-outline'}
+              size={28}
+              color={colors.goldDark}
+            />
           </LinearGradient>
 
           {done ? (
@@ -60,6 +69,20 @@ export default function ResetPasswordScreen() {
               <Text style={styles.title}>Password updated</Text>
               <Text style={styles.body}>You can now sign in with your new password.</Text>
               <Button label="Sign in" onPress={() => navigation.replace('Login')} full />
+            </>
+          ) : expired ? (
+            <>
+              <Text style={styles.title}>Link expired</Text>
+              <Text style={styles.body}>
+                This password reset link is invalid or has expired. Reset links are valid for 30
+                minutes and can be used once. Please request a new one.
+              </Text>
+              <Button
+                label="Request a new link"
+                onPress={() => navigation.replace('ForgotPassword')}
+                full
+              />
+              <Button label="Back to sign in" variant="ghost" onPress={() => navigation.replace('Login')} full />
             </>
           ) : (
             <>

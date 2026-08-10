@@ -77,7 +77,7 @@ export default function ShopScreen() {
   };
 
   return (
-    <Screen>
+    <Screen edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Shop</Text>
         <View style={styles.headerActions}>

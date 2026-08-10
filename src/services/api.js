@@ -34,8 +34,12 @@ function sanitise(data) {
     let raw = JSON.stringify(data);
     let changed = false;
     if (raw.includes('/uploads/')) {
-      raw = raw.replace(LOCAL_URL_RE, (_, path) => `${ORIGIN}${path}`);
-      changed = true;
+      // Absolute localhost → device-reachable origin
+      const before = raw;
+      raw = raw.replace(LOCAL_URL_RE, (_, p) => `${ORIGIN}${p}`);
+      // Relative /uploads/... (admin CMS / local disk) → absolute
+      raw = raw.replace(/"(\/uploads\/[^"]+)"/g, (_, p) => `"${ORIGIN}${p}"`);
+      if (raw !== before) changed = true;
     }
     if (raw.includes('drive.google.com')) {
       raw = raw.replace(GDRIVE_RE, (_, id) => `https://drive.google.com/thumbnail?id=${id}&sz=w1200`);

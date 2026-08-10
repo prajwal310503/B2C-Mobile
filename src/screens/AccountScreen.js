@@ -65,7 +65,7 @@ export default function AccountScreen() {
   };
 
   return (
-    <Screen>
+    <Screen edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <LinearGradient
           colors={gradients.primary}
@@ -167,7 +167,7 @@ export default function AccountScreen() {
           />
         ) : null}
 
-        <Text style={styles.version}>Luxury Jewellery · v1.0.0</Text>
+        <Text style={styles.version}>Royal Butterfly · v1.0.0</Text>
       </ScrollView>
     </Screen>
   );

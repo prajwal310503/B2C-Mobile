@@ -14,6 +14,7 @@ import {
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -23,11 +24,12 @@ import Button from '../components/ui/Button';
 import Stars from '../components/ui/Stars';
 import SectionHeader from '../components/ui/SectionHeader';
 import ProductCard from '../components/product/ProductCard';
-import { pincodeAPI, productAPI, reviewAPI } from '../services/api';
+import { categoryAPI, pincodeAPI, productAPI, reviewAPI } from '../services/api';
 import useCartStore from '../store/cartStore';
 import useWishlistStore from '../store/wishlistStore';
 import { toast } from '../store/toastStore';
 import { colors, formatPrice, gradients, radius, shadows } from '../theme';
+import { reverseGeocodePincode } from '../utils/geo';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const GALLERY_H = Math.round(SCREEN_W * 1.02);
@@ -130,6 +132,8 @@ export default function ProductScreen() {
   const [pincode, setPincode] = useState('');
   const [pincodeResult, setPincodeResult] = useState(null);
   const [checkingPin, setCheckingPin] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [browseCategories, setBrowseCategories] = useState([]);
 
   const addItem = useCartStore((s) => s.addItem);
   const toggleItem = useWishlistStore((s) => s.toggleItem);
@@ -170,6 +174,13 @@ export default function ProductScreen() {
     };
   }, [slug, preview]);
 
+  useEffect(() => {
+    categoryAPI
+      .getAll({ parent: 'null' })
+      .then(({ data }) => setBrowseCategories(data.data || []))
+      .catch(() => {});
+  }, []);
+
   const pricing = useMemo(() => {
     if (!product) return { price: 0, hasDiscount: false };
     const sale =
@@ -183,7 +194,7 @@ export default function ProductScreen() {
 
   if (loading && !product) {
     return (
-      <Screen>
+      <Screen edges={['top']}>
         <AppHeader title="Loading" />
         <ActivityIndicator color={colors.primary} style={styles.pageLoader} />
       </Screen>
@@ -192,7 +203,7 @@ export default function ProductScreen() {
 
   if (!product) {
     return (
-      <Screen>
+      <Screen edges={['top']}>
         <AppHeader title="Not found" />
         <View style={styles.center}>
           <Text style={styles.notFound}>This piece is no longer available.</Text>
@@ -244,15 +255,25 @@ export default function ProductScreen() {
   const handleShare = () =>
     Share.share({ message: `${product.title} — ${formatPrice(pricing.price)}` }).catch(() => {});
 
-  const checkPincode = async () => {
-    if (pincode.trim().length !== 6) {
+  const checkPincode = () => checkPincodeValue(pincode);
+
+  const checkPincodeValue = async (pinValue) => {
+    const pin = String(pinValue || '').trim();
+    if (pin.length !== 6) {
       toast.error('Enter a valid 6-digit pincode');
       return;
     }
     setCheckingPin(true);
     try {
-      const { data } = await pincodeAPI.check(pincode.trim());
-      setPincodeResult({ ok: true, message: data.message || 'Delivery available in your area' });
+      const { data } = await pincodeAPI.check(pin);
+      const payload = data?.data && typeof data.data === 'object' ? data.data : data;
+      const available = payload?.available === true;
+      setPincodeResult({
+        ok: available,
+        message:
+          payload?.message ||
+          (available ? 'Delivery available in your area' : 'Sorry, we do not deliver to this pincode yet'),
+      });
     } catch (error) {
       setPincodeResult({ ok: false, message: error?.message || 'Delivery not available here' });
     } finally {
@@ -260,8 +281,35 @@ export default function ProductScreen() {
     }
   };
 
+  const handleUseLocation = async () => {
+    setLocating(true);
+    setPincodeResult(null);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setPincodeResult({ ok: false, message: 'Location permission denied. Enter your pincode instead.' });
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const pin = await reverseGeocodePincode(pos.coords.latitude, pos.coords.longitude);
+      if (!pin) {
+        setPincodeResult({
+          ok: false,
+          message: 'Could not detect a valid pincode for your location. Please enter it manually.',
+        });
+        return;
+      }
+      setPincode(pin);
+      await checkPincodeValue(pin);
+    } catch (error) {
+      setPincodeResult({ ok: false, message: error?.message || 'Could not get your location. Enter pincode manually.' });
+    } finally {
+      setLocating(false);
+    }
+  };
+
   return (
-    <Screen>
+    <Screen edges={['top']}>
       <AppHeader
         title={product.category?.name || 'Product'}
         right={
@@ -415,9 +463,24 @@ export default function ProductScreen() {
           </View>
 
           <View style={[styles.pinCard, shadows.xs]}>
-            <View style={styles.pinHead}>
-              <Ionicons name="location-outline" size={16} color={colors.primary} />
-              <Text style={styles.pinTitle}>Check delivery</Text>
+            <View style={styles.pinHeadRow}>
+              <View style={styles.pinHead}>
+                <Ionicons name="location-outline" size={16} color={colors.primary} />
+                <Text style={styles.pinTitle}>Check delivery</Text>
+              </View>
+              <Pressable
+                onPress={handleUseLocation}
+                disabled={locating || checkingPin}
+                hitSlop={6}
+                style={styles.pinLocateBtn}
+              >
+                {locating ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Ionicons name="navigate-outline" size={13} color={colors.primary} />
+                )}
+                <Text style={styles.pinLocateText}>{locating ? 'Detecting…' : 'Locate me'}</Text>
+              </Pressable>
             </View>
             <View style={styles.pinRow}>
               <TextInput
@@ -480,6 +543,8 @@ export default function ProductScreen() {
                 value={breakup.diamondCarat ? `${breakup.diamondCarat} ct` : null}
               />
               <SpecRow label="Clarity" value={breakup.diamondClarity} />
+              <SpecRow label="Shape" value={breakup.diamondCut} />
+              <SpecRow label="Diamond color" value={breakup.diamondColor} />
               <SpecRow
                 label="Diamond amount"
                 value={breakup.diamondAmount ? formatPrice(breakup.diamondAmount) : null}
@@ -507,6 +572,14 @@ export default function ProductScreen() {
               value={product.metalWeight ? `${product.metalWeight} g` : null}
             />
             <SpecRow label="Diamond" value={product.diamondClarity} />
+            <SpecRow
+              label="Dimensions"
+              value={
+                product.dimensions && (product.dimensions.length || product.dimensions.width || product.dimensions.height)
+                  ? `${[product.dimensions.length, product.dimensions.width, product.dimensions.height].filter(Boolean).join(' × ')} ${product.dimensions.unit || 'mm'}`
+                  : null
+              }
+            />
             <SpecRow label="Category" value={product.category?.name} />
             <SpecRow
               label="Delivery"
@@ -601,6 +674,43 @@ export default function ProductScreen() {
                     navigation.push('Product', { slug: item.slug || item._id, preview: item })
                   }
                 />
+              )}
+            />
+          </View>
+        ) : null}
+
+        {browseCategories.length ? (
+          <View style={styles.exploreBlock}>
+            <SectionHeader eyebrow="Browse" title="Explore Our Range" />
+            <FlatList
+              data={browseCategories}
+              keyExtractor={(item) => item._id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.exploreRail}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => navigation.navigate('Category', { slug: item.slug, name: item.name })}
+                  style={styles.exploreItem}
+                >
+                  <View style={[styles.exploreCircle, shadows.sm]}>
+                    {item.image ? (
+                      <Image
+                        source={{ uri: item.image?.url || item.image }}
+                        style={styles.exploreImage}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    ) : (
+                      <LinearGradient colors={[colors.champagne, colors.blush]} style={styles.exploreImage}>
+                        <Ionicons name="diamond-outline" size={22} color={colors.goldDark} />
+                      </LinearGradient>
+                    )}
+                  </View>
+                  <Text numberOfLines={1} style={styles.exploreLabel}>
+                    {item.name}
+                  </Text>
+                </Pressable>
               )}
             />
           </View>
@@ -737,8 +847,15 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     gap: 10,
   },
+  pinHeadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   pinHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   pinTitle: { fontSize: 13.5, fontWeight: '700', color: colors.text },
+  pinLocateBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  pinLocateText: { fontSize: 11.5, fontWeight: '700', color: colors.primary },
   pinRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   pinInput: {
     flex: 1,
@@ -822,6 +939,20 @@ const styles = StyleSheet.create({
   reviewEmpty: { fontSize: 12.5, color: colors.textMuted, lineHeight: 19, textAlign: 'center' },
   relatedBlock: { marginTop: 32 },
   relatedRail: { paddingHorizontal: 16, gap: 12 },
+  exploreBlock: { marginTop: 32 },
+  exploreRail: { paddingHorizontal: 16, gap: 16 },
+  exploreItem: { alignItems: 'center', width: 76, gap: 7 },
+  exploreCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    backgroundColor: colors.champagne,
+    borderWidth: 2,
+    borderColor: colors.white,
+  },
+  exploreImage: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
+  exploreLabel: { fontSize: 11, fontWeight: '600', color: colors.text, textAlign: 'center' },
   stickyBar: {
     position: 'absolute',
     left: 0,

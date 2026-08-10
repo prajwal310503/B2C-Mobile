@@ -58,7 +58,7 @@ export default function ForgotPasswordScreen() {
               <Text style={styles.title}>Check your inbox</Text>
               <Text style={styles.body}>
                 We have sent a password reset link to {email.trim().toLowerCase()}. The link expires
-                in 15 minutes.
+                in 30 minutes.
               </Text>
               <View style={[styles.card, shadows.xs]}>
                 <Text style={styles.tip}>

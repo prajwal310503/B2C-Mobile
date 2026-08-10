@@ -41,7 +41,7 @@ export default function ReferScreen() {
   const share = () => {
     if (!info) return;
     Share.share({
-      message: `Shop certified fine jewellery at Luxury Jewellery. Use my code ${info.referralCode} — ${info.shareLink}`,
+      message: `Shop certified fine jewellery at Royal Butterfly. Use my code ${info.referralCode} — ${info.shareLink}`,
     }).catch(() => {});
   };
 

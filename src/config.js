@@ -25,7 +25,11 @@ export const API_BASE = configured || LIVE_API || `http://${inferDevHost()}:${BA
 
 export const ORIGIN = API_BASE.replace(/\/api\/?$/, '');
 
-export const GOOGLE_WEB_CLIENT_ID =
-  (typeof Constants.expoConfig?.extra?.googleWebClientId === 'string' &&
-    Constants.expoConfig.extra.googleWebClientId.trim()) ||
-  '';
+function extraString(key) {
+  const v = Constants.expoConfig?.extra?.[key];
+  return typeof v === 'string' && v.trim() ? v.trim() : '';
+}
+
+export const GOOGLE_WEB_CLIENT_ID = extraString('googleWebClientId');
+export const GOOGLE_ANDROID_CLIENT_ID = extraString('googleAndroidClientId');
+export const GOOGLE_IOS_CLIENT_ID = extraString('googleIosClientId');

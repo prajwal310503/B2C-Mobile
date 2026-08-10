@@ -83,7 +83,7 @@ export default function CartScreen() {
 
   if (!items.length) {
     return (
-      <Screen>
+      <Screen edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Cart</Text>
         </View>
@@ -99,7 +99,7 @@ export default function CartScreen() {
   }
 
   return (
-    <Screen>
+    <Screen edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Cart</Text>
         <Text style={styles.headerCount}>

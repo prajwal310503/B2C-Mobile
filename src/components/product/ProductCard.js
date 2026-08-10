@@ -1,5 +1,5 @@
-import { memo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { memo, useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,12 +29,81 @@ function Badge({ label, palette, icon }) {
   );
 }
 
+// Every product card on screen rotates its badge in perfect unison — the index is
+// derived from wall-clock time (not each card's own mount time), so they all flip
+// at exactly the same moment without needing any shared state.
+const BADGE_ROTATE_MS = 2600;
+function useSyncedTick(intervalMs) {
+  const [tick, setTick] = useState(() => Math.floor(Date.now() / intervalMs));
+  useEffect(() => {
+    let timeoutId;
+    const scheduleNext = () => {
+      const now = Date.now();
+      const next = (Math.floor(now / intervalMs) + 1) * intervalMs;
+      timeoutId = setTimeout(() => {
+        setTick(Math.floor(Date.now() / intervalMs));
+        scheduleNext();
+      }, next - now);
+    };
+    scheduleNext();
+    return () => clearTimeout(timeoutId);
+  }, [intervalMs]);
+  return tick;
+}
+
+function RotatingBadge({ badges }) {
+  const tick = useSyncedTick(BADGE_ROTATE_MS);
+  const opacity = useRef(new Animated.Value(1)).current;
+  const prevKey = useRef(null);
+  const badge = badges.length ? badges[tick % badges.length] : null;
+
+  useEffect(() => {
+    if (!badge) return;
+    if (prevKey.current === null) {
+      prevKey.current = badge.key;
+      return;
+    }
+    if (prevKey.current !== badge.key) {
+      prevKey.current = badge.key;
+      opacity.setValue(0);
+      Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [badge?.key]);
+
+  if (!badge) return null;
+  return (
+    <Animated.View style={[styles.rotatingBadge, { backgroundColor: badge.bg, opacity }]}>
+      {badge.icon ? <Ionicons name={badge.icon} size={10} color={badge.color} /> : null}
+      <Text style={[styles.rotatingBadgeText, { color: badge.color }]}>{badge.label}</Text>
+    </Animated.View>
+  );
+}
+
 function ProductCard({ product, onPress, width, index = 0, compact = false }) {
   const [swatch, setSwatch] = useState(0);
   const [imageFailed, setImageFailed] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
   const toggleItem = useWishlistStore((s) => s.toggleItem);
   const inWishlist = useWishlistStore((s) => s.items.some((i) => String(i?._id) === String(product?._id)));
+
+  const mounted = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(mounted, {
+      toValue: 1,
+      duration: 340,
+      delay: Math.min(index, 8) * 45,
+      useNativeDriver: true,
+    }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const entrance = {
+    opacity: mounted,
+    transform: [
+      { translateY: mounted.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
+      { scale: mounted.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+    ],
+  };
 
   const primary = product.images?.find((img) => img.isPrimary) || product.images?.[0];
   const salePrice =
@@ -43,8 +112,16 @@ function ProductCard({ product, onPress, width, index = 0, compact = false }) {
   const price = salePrice ?? product.price;
   const hasDiscount = product.discount > 0;
   const outOfStock = (Number(product.stock) || 0) <= 0;
+  const isFastDelivery = Number(product.deliveryDays) > 0 && Number(product.deliveryDays) <= 3;
   const fallback = gradients.card[index % gradients.card.length];
   const showImage = !!primary?.url && !imageFailed;
+
+  const rotatingBadges = [
+    hasDiscount && { key: 'discount', label: `${product.discount}% OFF`, bg: '#E11D48', color: colors.white },
+    product.isBestSeller && { key: 'bestSeller', label: 'Best Seller', bg: '#B76E79', color: colors.white, icon: 'star' },
+    product.isNewArrival && { key: 'newArrival', label: 'New Arrival', bg: '#5C8B6B', color: colors.white, icon: 'checkmark-circle' },
+    isFastDelivery && { key: 'fastDelivery', label: 'Faster Delivery', bg: '#F0DFC0', color: '#5A413F', icon: 'flash' },
+  ].filter(Boolean);
 
   const handleAddToCart = () => {
     if (outOfStock) return;
@@ -53,12 +130,12 @@ function ProductCard({ product, onPress, width, index = 0, compact = false }) {
   };
 
   return (
+    <Animated.View style={[{ width }, entrance]}>
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
         shadows.sm,
-        { width },
         pressed && { transform: [{ scale: 0.985 }] },
       ]}
     >
@@ -79,16 +156,11 @@ function ProductCard({ product, onPress, width, index = 0, compact = false }) {
         )}
 
         <View style={styles.badges}>
-          {outOfStock ? <Badge label="Out of Stock" palette={gradients.muted} /> : null}
-          {hasDiscount && !outOfStock ? (
-            <Badge label={`-${product.discount}% OFF`} palette={gradients.danger} />
-          ) : null}
-          {product.isBestSeller ? (
-            <Badge label="Bestseller" palette={gradients.goldDeep} icon="star" />
-          ) : null}
-          {product.isNewArrival && !product.isBestSeller ? (
-            <Badge label="New" palette={gradients.success} icon="checkmark-circle" />
-          ) : null}
+          {outOfStock ? (
+            <Badge label="Out of Stock" palette={gradients.muted} />
+          ) : (
+            <RotatingBadge badges={rotatingBadges} />
+          )}
         </View>
 
         <Pressable
@@ -160,6 +232,7 @@ function ProductCard({ product, onPress, width, index = 0, compact = false }) {
         ) : null}
       </View>
     </Pressable>
+    </Animated.View>
   );
 }
 
@@ -190,6 +263,16 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   badgeText: { fontSize: 9, fontWeight: '800', color: colors.white, letterSpacing: 0.3 },
+  rotatingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    ...shadows.xs,
+  },
+  rotatingBadgeText: { fontSize: 10.5, fontWeight: '700' },
   heart: {
     position: 'absolute',
     top: 8,

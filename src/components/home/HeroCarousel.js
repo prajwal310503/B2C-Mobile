@@ -32,7 +32,7 @@ export default function HeroCarousel({ banners = [], onPressBanner }) {
       <Pressable
         onPress={() => onPressBanner?.(item)}
         style={[styles.slide, shadows.md]}
-        disabled={!onPressBanner || !item.link}
+        disabled={!onPressBanner || !(item.ctaLink || item.link)}
       >
         {uri ? (
           <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={280} />

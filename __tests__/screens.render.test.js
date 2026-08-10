@@ -24,7 +24,7 @@ describe('storefront screens', () => {
 
     expect(await screen.findByText('Rings')).toBeTruthy();
     await waitFor(() => expect(screen.getByText('Test Product 1')).toBeTruthy());
-    expect(screen.getByText('Featured Boutiques')).toBeTruthy();
+    expect(screen.getByText('Our Collections')).toBeTruthy();
     expect(screen.getByText('Shree Jewellers')).toBeTruthy();
     expect(screen.getByText('Style Notes')).toBeTruthy();
     expect(screen.getByText('How to care for your gold jewellery')).toBeTruthy();
@@ -275,8 +275,8 @@ describe('content screens', () => {
       params: { pageKey: 'contact' },
     });
 
-    expect(await screen.findByText('care@vkjewellers.com')).toBeTruthy();
-    expect(screen.getByText('+91 9004436052')).toBeTruthy();
+    expect(await screen.findByText('care@royalbutterfly.in')).toBeTruthy();
+    expect(screen.getByText('+91 9594555962')).toBeTruthy();
     expect(screen.getByText('Send Enquiry')).toBeTruthy();
   });
 

@@ -20,14 +20,17 @@ import ProductCard from '../components/product/ProductCard';
 import HeroCarousel from '../components/home/HeroCarousel';
 import { ProductCardSkeleton } from '../components/ui/Skeleton';
 import { CartButton } from '../components/ui/AppHeader';
-import { blogAPI, categoryAPI, cmsAPI, productAPI, storeAPI } from '../services/api';
+import { blogAPI, categoryAPI, cmsAPI, productAPI } from '../services/api';
 import useWishlistStore from '../store/wishlistStore';
 import { colors, gradients, radius, shadows } from '../theme';
+import { COMPANY } from '../config/company';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const RAIL_CARD_W = Math.round(SCREEN_W * 0.44);
 const GRID_GAP = 12;
 const GRID_CARD_W = (SCREEN_W - 32 - GRID_GAP) / 2;
+const COLLECTION_CARD_W = Math.round(SCREEN_W * 0.42);
+const COLLECTION_CARD_H = Math.round(COLLECTION_CARD_W * (4 / 3));
 
 const FOOTER_LINKS = [
   { label: 'About Us', screen: 'StaticPage', params: { pageKey: 'about' } },
@@ -55,7 +58,7 @@ function TopBar() {
   return (
     <View style={styles.topBar}>
       <View>
-        <Text style={styles.brand}>LUXURY</Text>
+        <Text style={styles.brand}>{COMPANY.name.toUpperCase()}</Text>
         <Text style={styles.brandSub}>Fine Jewellery</Text>
       </View>
       <View style={styles.topActions}>
@@ -151,8 +154,12 @@ export default function HomeScreen() {
   const [featured, setFeatured] = useState([]);
   const [deals, setDeals] = useState([]);
   const [arrivals, setArrivals] = useState([]);
-  const [stores, setStores] = useState([]);
   const [blogs, setBlogs] = useState([]);
+  const [collectionSlides, setCollectionSlides] = useState([]);
+  const [collectionMeta, setCollectionMeta] = useState({
+    title: 'Our Collections',
+    subtitle: 'Styled for every moment',
+  });
 
   const load = useCallback(async () => {
     const results = await Promise.allSettled([
@@ -161,12 +168,12 @@ export default function HomeScreen() {
       productAPI.getAll({ limit: 12, isFeatured: true, sort: 'rating' }),
       productAPI.getAll({ limit: 8, isBestSeller: true, sort: 'popular' }),
       productAPI.getAll({ limit: 8, isNewArrival: true, sort: 'newest' }),
-      storeAPI.getStores({ featured: 'true' }),
       blogAPI.getAll({ limit: 4 }),
+      cmsAPI.getPageSections('home'),
     ]);
 
     const pick = (r) => (r.status === 'fulfilled' ? r.value.data.data || [] : []);
-    const [bannerRes, catRes, featRes, dealRes, newRes, storeRes, blogRes] = results;
+    const [bannerRes, catRes, featRes, dealRes, newRes, blogRes, sectionsRes] = results;
 
     const featuredList = pick(featRes);
     const dealList = pick(dealRes);
@@ -177,8 +184,27 @@ export default function HomeScreen() {
     setFeatured(featuredList);
     setDeals(dealList.length >= 4 ? dealList : featuredList.slice(0, 8));
     setArrivals(arrivalList.length ? arrivalList : featuredList.slice(0, 8));
-    setStores(pick(storeRes));
     setBlogs(pick(blogRes));
+
+    const sections = pick(sectionsRes);
+    const visit = sections.find((s) => s.sectionType === 'visit_stores');
+    const content = visit?.content || {};
+    const legacy = /store/i.test(content.title || '');
+    const slides = legacy
+      ? []
+      : (content.stores || content.slides || [])
+          .filter((s) => s?.image)
+          .map((s) => ({
+            name: s.name || 'Collection',
+            image: s.image,
+            link: s.link || s.href || '',
+            slug: (s.link || '').replace(/^\/collections\//, '') || undefined,
+          }));
+    setCollectionSlides(slides);
+    setCollectionMeta({
+      title: legacy ? 'Our Collections' : content.title || 'Our Collections',
+      subtitle: legacy ? 'Styled for every moment' : content.subtitle || 'Styled for every moment',
+    });
   }, []);
 
   useEffect(() => {
@@ -198,7 +224,7 @@ export default function HomeScreen() {
     navigation.navigate('Category', { slug: category.slug, name: category.name });
 
   return (
-    <Screen>
+    <Screen edges={['top']}>
       <TopBar />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -297,42 +323,48 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        {stores.length ? (
+        {collectionSlides.length ? (
           <View style={styles.block}>
             <SectionHeader
-              eyebrow="Marketplace"
-              title="Featured Boutiques"
-              actionLabel="All shops"
-              onAction={() => navigation.navigate('Stores')}
+              eyebrow="Collections"
+              title={collectionMeta.title}
+              subtitle={collectionMeta.subtitle}
             />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.rail}
             >
-              {stores.map((s) => (
+              {collectionSlides.map((item) => (
                 <Pressable
-                  key={s._id}
-                  onPress={() => navigation.navigate('StoreDetail', { slug: s.slug, preview: s })}
-                  style={[styles.storeCard, shadows.sm]}
+                  key={item.image}
+                  onPress={() => {
+                    if (item.slug) {
+                      navigation.navigate('Category', { slug: item.slug, name: item.name });
+                    } else {
+                      navigation.navigate('Tabs', { screen: 'Shop' });
+                    }
+                  }}
+                  style={[styles.collectionCard, shadows.sm]}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.name}
                 >
-                  {s.logo || s.image ? (
-                    <Image
-                      source={{ uri: s.logo || s.image }}
-                      style={styles.storeLogo}
-                      contentFit="cover"
-                    />
-                  ) : (
-                    <LinearGradient colors={gradients.gold} style={styles.storeLogo}>
-                      <Text style={styles.storeInitial}>{(s.name || 'S')[0]}</Text>
-                    </LinearGradient>
-                  )}
-                  <Text numberOfLines={1} style={styles.storeName}>
-                    {s.name}
-                  </Text>
-                  <Text numberOfLines={1} style={styles.storeCity}>
-                    {s.city || 'India'}
-                  </Text>
+                  <Image
+                    source={{ uri: item.image }}
+                    style={styles.collectionCardImage}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                  <LinearGradient
+                    colors={['transparent', 'rgba(20,12,8,0.75)']}
+                    style={styles.collectionCardFade}
+                  />
+                  <View style={styles.collectionCardMeta}>
+                    <Text numberOfLines={1} style={styles.collectionCardName}>
+                      {item.name}
+                    </Text>
+                    <Text style={styles.collectionCardCta}>Explore ›</Text>
+                  </View>
                 </Pressable>
               ))}
             </ScrollView>
@@ -375,7 +407,7 @@ export default function HomeScreen() {
         ) : null}
 
         <LinearGradient colors={gradients.primary} style={styles.footer}>
-          <Text style={styles.footerBrand}>LUXURY JEWELLERY</Text>
+          <Text style={styles.footerBrand}>{COMPANY.name.toUpperCase()}</Text>
           <Text style={styles.footerNote}>
             Crafted with certified gold and ethically sourced diamonds.
           </Text>
@@ -508,26 +540,44 @@ const styles = StyleSheet.create({
   },
   dealTitle: { fontSize: 19, fontWeight: '700', color: colors.primary },
   dealNote: { fontSize: 12, color: colors.primary700 },
-  storeCard: {
-    width: 128,
-    padding: 14,
-    alignItems: 'center',
-    gap: 7,
+  collectionCard: {
+    width: COLLECTION_CARD_W,
+    height: COLLECTION_CARD_H,
     borderRadius: radius.lg,
-    backgroundColor: colors.white,
+    overflow: 'hidden',
+    backgroundColor: '#efe8df',
     borderWidth: 1,
     borderColor: colors.border,
   },
-  storeLogo: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
+  collectionCardImage: {
+    ...StyleSheet.absoluteFillObject,
   },
-  storeInitial: { fontSize: 20, fontWeight: '800', color: colors.white },
-  storeName: { fontSize: 12.5, fontWeight: '700', color: colors.text, textAlign: 'center' },
-  storeCity: { fontSize: 10.5, color: colors.textFaint },
+  collectionCardFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '55%',
+  },
+  collectionCardMeta: {
+    position: 'absolute',
+    left: 10,
+    right: 10,
+    bottom: 10,
+    gap: 2,
+  },
+  collectionCardName: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  collectionCardCta: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 11,
+    fontWeight: '600',
+  },
   blogCard: {
     width: 200,
     borderRadius: radius.lg,

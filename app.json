@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Luxury Jewellery",
+    "name": "Royal Butterfly",
     "slug": "luxury-jewellery",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -34,11 +34,23 @@
     "plugins": [
       "expo-image",
       "expo-web-browser",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Royal Butterfly uses your location to auto-fill your delivery pincode and check availability in your area."
+        }
+      ]
     ],
     "extra": {
       "apiUrl": "https://api.royalbutterfly.in/api",
       "googleWebClientId": "1070822068903-146fllmcamqlqt1dg0d6oo9lfk4p33lm.apps.googleusercontent.com",
+      "companyName": "Royal Butterfly",
+      "companyLegalName": "Royal Butterfly",
+      "companyEmail": "care@royalbutterfly.in",
+      "companyPhone": "9594555962",
+      "companyPhoneDisplay": "+91 9594555962",
+      "companyAddress": "Office No 2, Matadin, Valai Pada, Nalasopara East, Palghar, Maharashtra 401209",
       "eas": {
         "projectId": "3b976646-396a-475e-967a-d32dcc4c2342"
       }

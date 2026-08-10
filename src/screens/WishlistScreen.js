@@ -25,7 +25,7 @@ export default function WishlistScreen() {
   };
 
   return (
-    <Screen>
+    <Screen edges={['top']}>
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Wishlist</Text>

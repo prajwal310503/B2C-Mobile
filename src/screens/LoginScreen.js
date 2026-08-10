@@ -118,7 +118,7 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>New to Luxury Jewellery?</Text>
+            <Text style={styles.footerText}>New to Royal Butterfly?</Text>
             <Pressable onPress={() => navigation.replace('Register', params)} hitSlop={8}>
               <Text style={styles.footerLink}>Create an account</Text>
             </Pressable>

@@ -296,7 +296,19 @@ function createServer() {
     }
 
     // ── content & misc ────────────────────────────────────────────────────
-    if (path.startsWith('/cms/pages/')) return ok({ sections: [] });
+    if (path === '/cms/pages/home') {
+      return ok([
+        {
+          sectionType: 'visit_stores',
+          content: {
+            title: 'Our Collections',
+            subtitle: 'Styled for every moment',
+            stores: fx.stores.map((s) => ({ name: s.name, image: s.banner, link: `/stores/${s.slug}` })),
+          },
+        },
+      ]);
+    }
+    if (path.startsWith('/cms/pages/')) return ok([]);
     if (path === '/cms/banners') return ok(fx.banners);
     if (path.startsWith('/cms/menus/')) return ok({ items: [] });
     if (path === '/settings/site-images') return ok({});
