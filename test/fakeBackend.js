@@ -265,7 +265,7 @@ function createServer() {
       if (!body?.shippingAddress?.pincode) return fail(400, 'Shipping address is incomplete');
       const created = {
         _id: `order${state.orders.length + 1}`,
-        orderNumber: `VK-20${state.orders.length + 1}`,
+        orderNumber: `RB-20${state.orders.length + 1}`,
         status: 'pending',
         createdAt: new Date().toISOString(),
         items: body.items,

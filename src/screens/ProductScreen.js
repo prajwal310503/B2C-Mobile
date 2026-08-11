@@ -591,7 +591,12 @@ export default function ProductScreen() {
             />
             {product.description ? (
               <Text style={styles.description}>
-                {String(product.description).replace(/<[^>]+>/g, '').trim()}
+                {String(product.description)
+                  .replace(/<\/p>\s*<p>/gi, '\n\n')
+                  .replace(/<br\s*\/?>/gi, '\n')
+                  .replace(/<[^>]+>/g, '')
+                  .replace(/\n{3,}/g, '\n\n')
+                  .trim()}
               </Text>
             ) : null}
           </Accordion>

@@ -67,14 +67,8 @@ export default function OrderDetailScreen() {
     }
   };
 
-  const requestCancel = async () => {
-    try {
-      await orderAPI.requestCancel(order._id, { reason: 'Requested from app' });
-      toast.success('Cancellation requested');
-      await load();
-    } catch (error) {
-      toast.error(error?.message || 'Could not request cancellation');
-    }
+  const requestCancel = () => {
+    navigation.navigate('CancelOrder', { id: order._id });
   };
 
   const requestReturn = () => {

@@ -38,6 +38,7 @@ const SECTIONS = [
       { key: 'StaticPage', params: { pageKey: 'contact' }, icon: 'mail-outline', label: 'Contact Us' },
       { key: 'StaticPage', params: { pageKey: 'faq' }, icon: 'help-circle-outline', label: 'FAQ' },
       { key: 'StaticPage', params: { pageKey: 'shipping' }, icon: 'cube-outline', label: 'Shipping Policy' },
+      { key: 'StaticPage', params: { pageKey: 'refund' }, icon: 'refresh-circle-outline', label: 'Refund Policy' },
       { key: 'StaticPage', params: { pageKey: 'privacy' }, icon: 'lock-closed-outline', label: 'Privacy Policy' },
       { key: 'StaticPage', params: { pageKey: 'terms' }, icon: 'document-text-outline', label: 'Terms & Conditions' },
     ],

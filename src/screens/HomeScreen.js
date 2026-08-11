@@ -37,6 +37,7 @@ const FOOTER_LINKS = [
   { label: 'Contact', screen: 'StaticPage', params: { pageKey: 'contact' } },
   { label: 'FAQ', screen: 'StaticPage', params: { pageKey: 'faq' } },
   { label: 'Shipping', screen: 'StaticPage', params: { pageKey: 'shipping' } },
+  { label: 'Refund', screen: 'StaticPage', params: { pageKey: 'refund' } },
   { label: 'Privacy', screen: 'StaticPage', params: { pageKey: 'privacy' } },
   { label: 'Terms', screen: 'StaticPage', params: { pageKey: 'terms' } },
   { label: 'Journal', screen: 'Blog' },
@@ -166,7 +167,7 @@ export default function HomeScreen() {
       cmsAPI.getBanners('hero'),
       categoryAPI.getAll({ parent: 'null' }),
       productAPI.getAll({ limit: 12, isFeatured: true, sort: 'rating' }),
-      productAPI.getAll({ limit: 8, isBestSeller: true, sort: 'popular' }),
+      productAPI.getAll({ limit: 8, segments: 'Deal of Week', sort: 'newest' }),
       productAPI.getAll({ limit: 8, isNewArrival: true, sort: 'newest' }),
       blogAPI.getAll({ limit: 4 }),
       cmsAPI.getPageSections('home'),
@@ -182,8 +183,13 @@ export default function HomeScreen() {
     setBanners(pick(bannerRes));
     setCategories(pick(catRes));
     setFeatured(featuredList);
-    setDeals(dealList.length >= 4 ? dealList : featuredList.slice(0, 8));
-    setArrivals(arrivalList.length ? arrivalList : featuredList.slice(0, 8));
+    const dealsFinal = dealList.length ? dealList.slice(0, 8) : featuredList.slice(0, 8);
+    const dealIds = new Set(dealsFinal.map((p) => p._id));
+    const arrivalsFinal = (arrivalList.length ? arrivalList : featuredList)
+      .filter((p) => !dealIds.has(p._id))
+      .slice(0, 8);
+    setDeals(dealsFinal);
+    setArrivals(arrivalsFinal);
     setBlogs(pick(blogRes));
 
     const sections = pick(sectionsRes);

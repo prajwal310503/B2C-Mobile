@@ -168,7 +168,7 @@ describe('account screens', () => {
     await asSignedIn();
     await renderScreen(require('../src/screens/OrdersScreen').default);
 
-    expect(await screen.findByText(/VK-1001/)).toBeTruthy();
+    expect(await screen.findByText(/RB-1001/)).toBeTruthy();
   });
 
   it('Order detail shows the timeline and tracking', async () => {
@@ -177,7 +177,7 @@ describe('account screens', () => {
       params: { id: 'order1' },
     });
 
-    expect(await screen.findByText(/VK-1001/)).toBeTruthy();
+    expect(await screen.findByText(/RB-1001/)).toBeTruthy();
     await waitFor(() => expect(screen.getByText(/BD123456789/)).toBeTruthy());
   });
 

@@ -33,6 +33,7 @@ import BlogDetailScreen from '../screens/BlogDetailScreen';
 import StoresScreen from '../screens/StoresScreen';
 import StoreDetailScreen from '../screens/StoreDetailScreen';
 import StaticPageScreen from '../screens/StaticPageScreen';
+import CancelOrderScreen from '../screens/CancelOrderScreen';
 import BecomeSellerScreen from '../screens/BecomeSellerScreen';
 import VendorRegisterScreen from '../screens/VendorRegisterScreen';
 import WriteReviewScreen from '../screens/WriteReviewScreen';
@@ -115,6 +116,7 @@ export default function RootNavigator() {
         />
         <Stack.Screen name="Orders" component={OrdersScreen} />
         <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+        <Stack.Screen name="CancelOrder" component={CancelOrderScreen} />
         <Stack.Screen name="Addresses" component={AddressesScreen} />
         <Stack.Screen name="Support" component={SupportScreen} />
         <Stack.Screen name="Refer" component={ReferScreen} />

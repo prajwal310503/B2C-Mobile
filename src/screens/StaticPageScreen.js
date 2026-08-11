@@ -79,6 +79,31 @@ Orders are subject to availability. Returns and exchanges follow individual shop
     title: 'Shipping Policy',
     content: `Standard delivery takes 5–10 business days depending on the vendor and your location. Insured shipping is available on high-value orders. Each shop may have specific shipping timelines shown on product pages.`,
   },
+  refund: {
+    title: 'Refund Policy',
+    content: `At ${COMPANY.name}, customer satisfaction is our priority.
+
+1-DAY RETURN POLICY
+You can request a return within 24 hours of receiving your order if:
+• You received the wrong item
+• The product is damaged or defective
+• The item is missing parts, stones, or incomplete
+
+Contact support within 24 hours with your order number and photos. Once approved, we'll arrange the return and process your refund or replacement.
+
+Replacement or exchanged products are typically delivered within 4–5 business days.
+Refunds are credited within 7 days to the original payment method.
+
+7-DAY SIZE EXCHANGE
+Ordered the wrong ring, bangle, or chain size? Request a size exchange within 7 days of delivery if:
+• The jewellery is unused and unworn
+• All original tags, certificates, and packaging are intact
+• The piece is in its original, saleable condition
+
+Please pack the piece securely for the exchange. Size availability depends on vendor stock.
+
+Need help? Email ${COMPANY.email}${COMPANY.phoneDisplay ? ` or call ${COMPANY.phoneDisplay}` : ''}.`,
+  },
 };
 
 function FaqItem({ item }) {

@@ -208,7 +208,7 @@ const user = {
 const orders = [
   {
     _id: 'order1',
-    orderNumber: 'VK-1001',
+    orderNumber: 'RB-1001',
     createdAt: '2026-07-01T00:00:00.000Z',
     status: 'shipped',
     items: [
