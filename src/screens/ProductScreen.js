@@ -24,6 +24,7 @@ import Button from '../components/ui/Button';
 import Stars from '../components/ui/Stars';
 import SectionHeader from '../components/ui/SectionHeader';
 import ProductCard from '../components/product/ProductCard';
+import SizeGuideModal from '../components/product/SizeGuideModal';
 import { categoryAPI, pincodeAPI, productAPI, reviewAPI } from '../services/api';
 import useCartStore from '../store/cartStore';
 import useWishlistStore from '../store/wishlistStore';
@@ -134,6 +135,8 @@ export default function ProductScreen() {
   const [checkingPin, setCheckingPin] = useState(false);
   const [locating, setLocating] = useState(false);
   const [browseCategories, setBrowseCategories] = useState([]);
+  const [selectedMetalOption, setSelectedMetalOption] = useState(null);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   const addItem = useCartStore((s) => s.addItem);
   const toggleItem = useWishlistStore((s) => s.toggleItem);
@@ -183,6 +186,9 @@ export default function ProductScreen() {
 
   const pricing = useMemo(() => {
     if (!product) return { price: 0, hasDiscount: false };
+    if (selectedMetalOption?.finalPrice != null) {
+      return { price: selectedMetalOption.finalPrice, hasDiscount: false };
+    }
     const sale =
       (product.discountedPrice > 0 ? product.discountedPrice : null) ??
       (product.price > 0 ? product.price : null);
@@ -190,7 +196,13 @@ export default function ProductScreen() {
       price: sale ?? product.price,
       hasDiscount: product.discount > 0,
     };
-  }, [product]);
+  }, [product, selectedMetalOption]);
+
+  useEffect(() => {
+    const opts = product?.jewelleryPriceOptions;
+    if (opts?.length) setSelectedMetalOption(opts[0]);
+    else setSelectedMetalOption(null);
+  }, [product?._id, product?.jewelleryPriceOptions]);
 
   if (loading && !product) {
     return (
@@ -214,13 +226,30 @@ export default function ProductScreen() {
   }
 
   const outOfStock = (Number(product.stock) || 0) <= 0;
+  const sf = product.jewelleryPricing?.storefrontOptions || {};
+  const showMetalSelector = sf.showMetalSelector !== false;
+  const showSizeOption = sf.showSize !== false;
+  const showLengthOption = !!sf.showLength || (product.lengths?.enabled && product.lengths?.available?.length > 0);
+  const showPriceBreakdown = sf.showPriceBreakdown !== false;
+  const sizeLabel = sf.sizeLabel || 'Select Size';
+  const DEFAULT_SIZES = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26];
   const needsSize = product.sizes?.enabled && product.sizes?.available?.length > 0;
-  const needsLength = product.lengths?.enabled && product.lengths?.available?.length > 0;
+  const sizeList = showSizeOption
+    ? (needsSize
+        ? [...product.sizes.available].sort((a, b) => a - b)
+        : (Array.isArray(sf.defaultSizes) && sf.defaultSizes.length
+            ? [...sf.defaultSizes].sort((a, b) => a - b)
+            : DEFAULT_SIZES))
+    : [];
+  const needsLength = showLengthOption && product.lengths?.available?.length > 0;
+  const lengthList = needsLength
+    ? [...product.lengths.available].sort((a, b) => a - b)
+    : [];
   const needsColor = product.stoneColors?.length > 0;
   const breakup = product.priceBreakup || {};
 
   const buildSelections = () => {
-    if (needsSize && !size) {
+    if (showSizeOption && sizeList.length && !size) {
       toast.error('Please select a size');
       return null;
     }
@@ -232,23 +261,51 @@ export default function ProductScreen() {
       toast.error('Please select a stone colour');
       return null;
     }
+    if (showMetalSelector && product.jewelleryPriceOptions?.length && !selectedMetalOption) {
+      toast.error('Please select metal & purity');
+      return null;
+    }
     const selections = {};
     if (size) selections.size = size;
     if (length) selections.length = `${length}"`;
     if (stoneColor) selections.stoneColor = stoneColor;
+    if (selectedMetalOption) {
+      selections.metal = selectedMetalOption.metalName;
+      selections.purity = selectedMetalOption.purityName;
+      selections.metalPurityKey = `${selectedMetalOption.metalId}-${selectedMetalOption.purityId}`;
+    }
     return Object.keys(selections).length ? selections : null;
   };
 
+  const cartProduct = selectedMetalOption
+    ? {
+        ...product,
+        price: selectedMetalOption.finalPrice,
+        discountedPrice: selectedMetalOption.finalPrice,
+        discount: 0,
+        purity: selectedMetalOption.purityName,
+        metalWeight: selectedMetalOption.weight,
+      }
+    : product;
+
   const handleAddToCart = () => {
     const selections = buildSelections();
-    if (selections === null && (needsSize || needsLength || needsColor)) return;
-    addItem(product, qty, null, selections);
+    if (
+      selections === null &&
+      (sizeList.length || needsLength || needsColor || (showMetalSelector && product.jewelleryPriceOptions?.length))
+    )
+      return;
+    addItem(cartProduct, qty, null, selections);
   };
 
   const handleBuyNow = () => {
     const selections = buildSelections();
-    if (selections === null && (needsSize || needsLength || needsColor)) return;
-    addItem(product, qty, null, selections);
+    if (
+      selections === null &&
+      (sizeList.length || needsLength || needsColor || (showMetalSelector && product.jewelleryPriceOptions?.length))
+    )
+      return;
+    addItem(cartProduct, qty, null, selections);
     navigation.navigate('Checkout');
   };
 
@@ -377,13 +434,50 @@ export default function ProductScreen() {
           </View>
           <Text style={styles.taxNote}>Inclusive of all taxes</Text>
 
+          {showMetalSelector && product.jewelleryPriceOptions?.length ? (
+            <View style={styles.selectorBlock}>
+              <Text style={styles.selectorLabel}>Metal</Text>
+              <View style={styles.chipRow}>
+                {[...new Map(product.jewelleryPriceOptions.map((o) => [o.metalId, o])).values()].map((o) => (
+                  <Chip
+                    key={o.metalId}
+                    label={o.metalName}
+                    wide
+                    active={selectedMetalOption?.metalId === o.metalId}
+                    onPress={() => {
+                      const first = product.jewelleryPriceOptions.find((x) => x.metalId === o.metalId);
+                      if (first) setSelectedMetalOption(first);
+                    }}
+                  />
+                ))}
+              </View>
+              {selectedMetalOption ? (
+                <>
+                  <Text style={[styles.selectorLabel, { marginTop: 12 }]}>Purity</Text>
+                  <View style={styles.chipRow}>
+                    {product.jewelleryPriceOptions
+                      .filter((o) => o.metalId === selectedMetalOption.metalId)
+                      .map((o) => (
+                        <Chip
+                          key={`${o.metalId}-${o.purityId}`}
+                          label={o.purityName}
+                          active={selectedMetalOption.purityId === o.purityId}
+                          onPress={() => setSelectedMetalOption(o)}
+                        />
+                      ))}
+                  </View>
+                </>
+              ) : null}
+            </View>
+          ) : null}
+
           {product.shortDescription ? (
             <Text style={styles.shortDesc}>{product.shortDescription}</Text>
           ) : null}
 
           <View style={styles.trustRow}>
             {[
-              { icon: 'shield-checkmark-outline', label: product.purity || 'Certified' },
+              { icon: 'shield-checkmark-outline', label: selectedMetalOption?.purityName || product.purity || 'Certified' },
               { icon: 'cube-outline', label: product.freeShipping ? 'Free shipping' : 'Insured shipping' },
               { icon: 'refresh-outline', label: '15-day returns' },
             ].map((t) => (
@@ -394,11 +488,16 @@ export default function ProductScreen() {
             ))}
           </View>
 
-          {needsSize ? (
+          {sizeList.length ? (
             <View style={styles.selectorBlock}>
-              <Text style={styles.selectorLabel}>Select Size</Text>
+              <View style={styles.sizeHeaderRow}>
+                <Text style={styles.selectorLabel}>{sizeLabel}</Text>
+                <Pressable onPress={() => setSizeGuideOpen(true)} hitSlop={8}>
+                  <Text style={styles.sizeGuideLink}>Size Guide</Text>
+                </Pressable>
+              </View>
               <View style={styles.chipRow}>
-                {[...product.sizes.available].sort((a, b) => a - b).map((s) => (
+                {sizeList.map((s) => (
                   <Chip
                     key={s}
                     label={String(s)}
@@ -410,11 +509,11 @@ export default function ProductScreen() {
             </View>
           ) : null}
 
-          {needsLength ? (
+          {lengthList.length ? (
             <View style={styles.selectorBlock}>
               <Text style={styles.selectorLabel}>Select Length</Text>
               <View style={styles.chipRow}>
-                {[...product.lengths.available].sort((a, b) => a - b).map((l) => (
+                {lengthList.map((l) => (
                   <Chip
                     key={l}
                     label={`${l}"`}
@@ -521,8 +620,41 @@ export default function ProductScreen() {
             ) : null}
           </View>
 
-          {breakup.metalType || breakup.grossWeight || breakup.makingCharges ? (
-            <Accordion title="Price Breakup">
+          {showPriceBreakdown &&
+          (selectedMetalOption || breakup.metalType || breakup.grossWeight || breakup.makingCharges) ? (
+            <Accordion title="Price Breakup" defaultOpen={!!selectedMetalOption}>
+              {selectedMetalOption ? (
+                <>
+                  <SpecRow
+                    label="Metal"
+                    value={`${selectedMetalOption.metalName} · ${selectedMetalOption.purityName}`}
+                  />
+                  <SpecRow label="Weight" value={`${selectedMetalOption.weight} g`} />
+                  <SpecRow
+                    label="Metal rate"
+                    value={`${formatPrice(selectedMetalOption.rate)} / g`}
+                  />
+                  <SpecRow label="Metal value" value={formatPrice(selectedMetalOption.metalValue)} />
+                  <SpecRow
+                    label="Diamond / Stone"
+                    value={formatPrice(selectedMetalOption.diamondStoneTotal)}
+                  />
+                  <SpecRow
+                    label="Additional"
+                    value={formatPrice(selectedMetalOption.additionalTotal)}
+                  />
+                  <SpecRow
+                    label="Making charges"
+                    value={formatPrice(selectedMetalOption.makingCharges)}
+                  />
+                  <SpecRow
+                    label="GST"
+                    value={`${selectedMetalOption.gstPercent}% (${formatPrice(selectedMetalOption.gst)})`}
+                  />
+                  <SpecRow label="Price" value={formatPrice(selectedMetalOption.finalPrice)} />
+                </>
+              ) : (
+                <>
               <SpecRow label="Metal" value={breakup.metalType} />
               <SpecRow
                 label="Gross weight"
@@ -561,15 +693,21 @@ export default function ProductScreen() {
                   </Text>
                 </View>
               ) : null}
+                </>
+              )}
             </Accordion>
           ) : null}
 
           <Accordion title="Product Details" defaultOpen>
             <SpecRow label="SKU" value={product.sku} />
-            <SpecRow label="Purity" value={product.purity} />
+            <SpecRow label="Purity" value={selectedMetalOption?.purityName || product.purity} />
             <SpecRow
               label="Metal weight"
-              value={product.metalWeight ? `${product.metalWeight} g` : null}
+              value={
+                (selectedMetalOption?.weight || product.metalWeight)
+                  ? `${selectedMetalOption?.weight || product.metalWeight} g`
+                  : null
+              }
             />
             <SpecRow label="Diamond" value={product.diamondClarity} />
             <SpecRow
@@ -738,6 +876,8 @@ export default function ProductScreen() {
           style={styles.stickyBtn}
         />
       </View>
+
+      <SizeGuideModal open={sizeGuideOpen} onClose={() => setSizeGuideOpen(false)} />
     </Screen>
   );
 }
@@ -807,6 +947,16 @@ const styles = StyleSheet.create({
   trustItem: { flex: 1, alignItems: 'center', gap: 5 },
   trustText: { fontSize: 10, fontWeight: '600', color: colors.text, textAlign: 'center' },
   selectorBlock: { marginTop: 16, gap: 9 },
+  sizeHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sizeGuideLink: {
+    fontSize: 13,
+    color: colors.text,
+    textDecorationLine: 'underline',
+  },
   selectorLabel: {
     fontSize: 11.5,
     fontWeight: '700',
