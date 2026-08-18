@@ -31,6 +31,11 @@ import useWishlistStore from '../store/wishlistStore';
 import { toast } from '../store/toastStore';
 import { colors, formatPrice, gradients, radius, shadows } from '../theme';
 import { reverseGeocodePincode } from '../utils/geo';
+import {
+  calcJewelleryPriceForWeight,
+  resolveActiveWeight,
+  resolveProductSizeList,
+} from '../utils/jewelleryPrice';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const GALLERY_H = Math.round(SCREEN_W * 1.02);
@@ -184,10 +189,49 @@ export default function ProductScreen() {
       .catch(() => {});
   }, []);
 
+  const sizeList = useMemo(() => resolveProductSizeList(product), [product]);
+
+  const activeWeight = useMemo(
+    () => resolveActiveWeight(product, selectedMetalOption, size),
+    [product, selectedMetalOption, size]
+  );
+
   const pricing = useMemo(() => {
     if (!product) return { price: 0, hasDiscount: false };
-    if (selectedMetalOption?.finalPrice != null) {
-      return { price: selectedMetalOption.finalPrice, hasDiscount: false };
+    const jp = product.jewelleryPricing || {};
+    if (selectedMetalOption) {
+      const hasSizeVariants = (jp.sizeVariants || []).length > 0;
+      const stored = (jp.variantPrices || []).find((v) => {
+        const metalOk = String(v.metalId) === String(selectedMetalOption.metalId);
+        const purityOk = String(v.purityId) === String(selectedMetalOption.purityId);
+        if (!metalOk || !purityOk) return false;
+        if (!hasSizeVariants) return !v.size || v.size === '';
+        if (!size) return false;
+        return String(v.size) === String(size);
+      });
+      if (stored?.finalPrice != null) {
+        return {
+          price: Number(stored.finalPrice),
+          hasDiscount: false,
+          calc: {
+            metalValue: stored.metalValue,
+            additionalTotal: stored.additionalTotal,
+            makingCharges: stored.makingCharges,
+            gst: stored.gst,
+            finalPrice: stored.finalPrice,
+            weight: stored.weight,
+          },
+        };
+      }
+      const calc = calcJewelleryPriceForWeight({
+        weight: activeWeight,
+        rate: selectedMetalOption.rate,
+        diamondStoneTotal: jp.diamondStoneTotal,
+        additionalItems: jp.additionalItems,
+        makingChargePercent: jp.makingChargePercent,
+        gstPercent: jp.gstPercent,
+      });
+      return { price: calc.finalPrice, hasDiscount: false, calc };
     }
     const sale =
       (product.discountedPrice > 0 ? product.discountedPrice : null) ??
@@ -196,13 +240,18 @@ export default function ProductScreen() {
       price: sale ?? product.price,
       hasDiscount: product.discount > 0,
     };
-  }, [product, selectedMetalOption]);
+  }, [product, selectedMetalOption, activeWeight, size]);
 
   useEffect(() => {
     const opts = product?.jewelleryPriceOptions;
     if (opts?.length) setSelectedMetalOption(opts[0]);
     else setSelectedMetalOption(null);
   }, [product?._id, product?.jewelleryPriceOptions]);
+
+  useEffect(() => {
+    if (!sizeList.length) return;
+    if (!size || !sizeList.includes(String(size))) setSize(String(sizeList[0]));
+  }, [product?._id, sizeList]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading && !product) {
     return (
@@ -227,26 +276,26 @@ export default function ProductScreen() {
 
   const outOfStock = (Number(product.stock) || 0) <= 0;
   const sf = product.jewelleryPricing?.storefrontOptions || {};
-  const showMetalSelector = sf.showMetalSelector !== false;
-  const showSizeOption = sf.showSize !== false;
+  const showMetalSelector = sf.showMetalSelector !== false && (product.jewelleryPriceOptions || []).length > 0;
+  const showSizeOption = sizeList.length > 0;
   const showLengthOption = !!sf.showLength || (product.lengths?.enabled && product.lengths?.available?.length > 0);
   const showPriceBreakdown = sf.showPriceBreakdown !== false;
   const sizeLabel = sf.sizeLabel || 'Select Size';
-  const DEFAULT_SIZES = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26];
-  const needsSize = product.sizes?.enabled && product.sizes?.available?.length > 0;
-  const sizeList = showSizeOption
-    ? (needsSize
-        ? [...product.sizes.available].sort((a, b) => a - b)
-        : (Array.isArray(sf.defaultSizes) && sf.defaultSizes.length
-            ? [...sf.defaultSizes].sort((a, b) => a - b)
-            : DEFAULT_SIZES))
-    : [];
+  const sizeUnit = sf.sizeUnit || '';
   const needsLength = showLengthOption && product.lengths?.available?.length > 0;
   const lengthList = needsLength
     ? [...product.lengths.available].sort((a, b) => a - b)
     : [];
   const needsColor = product.stoneColors?.length > 0;
   const breakup = product.priceBreakup || {};
+
+  const formatSizeLabel = (s) => {
+    const v = String(s);
+    if (v === 'adjustable') return 'Adjustable';
+    if (sizeUnit === 'IND') return v.padStart(2, '0');
+    if (sizeUnit) return `${v} ${sizeUnit}`;
+    return v;
+  };
 
   const buildSelections = () => {
     if (showSizeOption && sizeList.length && !size) {
@@ -280,11 +329,11 @@ export default function ProductScreen() {
   const cartProduct = selectedMetalOption
     ? {
         ...product,
-        price: selectedMetalOption.finalPrice,
-        discountedPrice: selectedMetalOption.finalPrice,
+        price: pricing.price,
+        discountedPrice: pricing.price,
         discount: 0,
         purity: selectedMetalOption.purityName,
-        metalWeight: selectedMetalOption.weight,
+        metalWeight: activeWeight,
       }
     : product;
 
@@ -500,9 +549,10 @@ export default function ProductScreen() {
                 {sizeList.map((s) => (
                   <Chip
                     key={s}
-                    label={String(s)}
-                    active={size === s}
-                    onPress={() => setSize(s)}
+                    label={formatSizeLabel(s)}
+                    active={String(size) === String(s)}
+                    onPress={() => setSize(String(s))}
+                    wide={String(s) === 'adjustable' || String(s).length > 3}
                   />
                 ))}
               </View>
@@ -629,29 +679,29 @@ export default function ProductScreen() {
                     label="Metal"
                     value={`${selectedMetalOption.metalName} · ${selectedMetalOption.purityName}`}
                   />
-                  <SpecRow label="Weight" value={`${selectedMetalOption.weight} g`} />
+                  <SpecRow label="Weight" value={`${activeWeight} g`} />
                   <SpecRow
                     label="Metal rate"
                     value={`${formatPrice(selectedMetalOption.rate)} / g`}
                   />
-                  <SpecRow label="Metal value" value={formatPrice(selectedMetalOption.metalValue)} />
+                  <SpecRow label="Metal value" value={formatPrice(pricing.calc?.metalValue ?? selectedMetalOption.metalValue)} />
                   <SpecRow
                     label="Diamond / Stone"
                     value={formatPrice(selectedMetalOption.diamondStoneTotal)}
                   />
                   <SpecRow
                     label="Additional"
-                    value={formatPrice(selectedMetalOption.additionalTotal)}
+                    value={formatPrice(pricing.calc?.additionalTotal ?? selectedMetalOption.additionalTotal)}
                   />
                   <SpecRow
                     label="Making charges"
-                    value={formatPrice(selectedMetalOption.makingCharges)}
+                    value={formatPrice(pricing.calc?.makingCharges ?? selectedMetalOption.makingCharges)}
                   />
                   <SpecRow
                     label="GST"
-                    value={`${selectedMetalOption.gstPercent}% (${formatPrice(selectedMetalOption.gst)})`}
+                    value={`${selectedMetalOption.gstPercent}% (${formatPrice(pricing.calc?.gst ?? selectedMetalOption.gst)})`}
                   />
-                  <SpecRow label="Price" value={formatPrice(selectedMetalOption.finalPrice)} />
+                  <SpecRow label="Price" value={formatPrice(pricing.price)} />
                 </>
               ) : (
                 <>
@@ -704,8 +754,8 @@ export default function ProductScreen() {
             <SpecRow
               label="Metal weight"
               value={
-                (selectedMetalOption?.weight || product.metalWeight)
-                  ? `${selectedMetalOption?.weight || product.metalWeight} g`
+                (activeWeight || product.metalWeight)
+                  ? `${activeWeight || product.metalWeight} g`
                   : null
               }
             />
