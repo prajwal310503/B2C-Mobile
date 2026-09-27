@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -36,6 +36,7 @@ import {
   resolveActiveWeight,
   resolveProductSizeList,
 } from '../utils/jewelleryPrice';
+import { filterImagesForMetal } from '../utils/metalImageGroup';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const GALLERY_H = Math.round(SCREEN_W * 1.02);
@@ -82,10 +83,18 @@ function SpecRow({ label, value }) {
 function Gallery({ images, title }) {
   const [index, setIndex] = useState(0);
   const media = images?.length ? images : [{ url: null }];
+  const listRef = useRef(null);
+
+  // Switching metal color swaps `images` for that color's photos — jump back to the main shot
+  useEffect(() => {
+    setIndex(0);
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [images]);
 
   return (
     <View>
       <FlatList
+        ref={listRef}
         data={media}
         keyExtractor={(item, i) => String(item.url || i)}
         horizontal
@@ -190,6 +199,11 @@ export default function ProductScreen() {
   }, []);
 
   const sizeList = useMemo(() => resolveProductSizeList(product), [product]);
+
+  const galleryImages = useMemo(
+    () => filterImagesForMetal(product?.images, selectedMetalOption?.metalCode),
+    [product, selectedMetalOption?.metalCode]
+  );
 
   const activeWeight = useMemo(
     () => resolveActiveWeight(product, selectedMetalOption, size),
@@ -438,7 +452,7 @@ export default function ProductScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 130 + insets.bottom }}
       >
-        <Gallery images={product.images} title={product.title} />
+        <Gallery images={galleryImages} title={product.title} />
 
         <View style={styles.body}>
           {product.store?.name || product.vendor?.storeName ? (
