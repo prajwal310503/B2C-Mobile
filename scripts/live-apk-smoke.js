@@ -123,10 +123,12 @@ async function main() {
   );
 
   const email = `apk.smoke.${Date.now()}@test.com`;
+  // Phone must be unique per account — derive one from the timestamp like the email.
+  const phone = `9${String(Date.now()).slice(-9)}`;
   const register = await request('POST', '/auth/register', {
     name: 'APK Smoke',
     email,
-    phone: '9876501234',
+    phone,
     password: 'correct-password',
   });
   const token = register.json?.token;
