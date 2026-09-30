@@ -50,13 +50,17 @@ export default function RegisterScreen() {
     if (Object.keys(next).length) return;
 
     try {
-      await register({
+      const user = await register({
         name: form.name.trim(),
         email: form.email.trim().toLowerCase(),
         phone: form.phone,
         password: form.password,
         referralCode: form.referralCode.trim().toUpperCase() || undefined,
       });
+      if (!user) {
+        navigation.replace('Login', { ...params, registeredEmail: form.email.trim().toLowerCase() });
+        return;
+      }
       if (params.redirect) navigation.replace(params.redirect);
       else navigation.goBack();
     } catch {

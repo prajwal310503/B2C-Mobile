@@ -22,6 +22,14 @@ import useAuthStore from '../store/authStore';
 import { toast } from '../store/toastStore';
 import { colors, gradients, radius, shadows } from '../theme';
 
+// Keep only the 10-digit mobile — drops +91 / 0 prefixes, spaces and dashes (e.g. pasted numbers)
+const toMobile = (v) => {
+  let d = String(v).replace(/\D/g, '');
+  if (d.length === 12 && d.startsWith('91')) d = d.slice(2);
+  else if (d.length === 11 && d.startsWith('0')) d = d.slice(1);
+  return d.slice(0, 10);
+};
+
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
@@ -53,6 +61,10 @@ export default function ProfileScreen() {
   const saveProfile = async () => {
     if (!name.trim()) {
       toast.error('Name is required');
+      return;
+    }
+    if (phone && !/^\d{10}$/.test(phone)) {
+      toast.error('Enter a valid 10-digit mobile number');
       return;
     }
     setSavingProfile(true);
@@ -138,7 +150,7 @@ export default function ProfileScreen() {
             <Field
               label="Phone"
               value={phone}
-              onChangeText={(t) => setPhone(t.replace(/\D/g, '').slice(0, 10))}
+              onChangeText={(t) => setPhone(toMobile(t))}
               placeholder="10-digit mobile number"
               keyboardType="number-pad"
             />

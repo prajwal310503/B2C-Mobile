@@ -26,7 +26,7 @@ export default function LoginScreen() {
   const googleLogin = useAuthStore((s) => s.googleLogin);
   const loading = useAuthStore((s) => s.loading);
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(params.registeredEmail || '');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
 
@@ -74,6 +74,14 @@ export default function LoginScreen() {
           </View>
 
           <View style={[styles.card, shadows.sm]}>
+            {params.registeredEmail ? (
+              <View style={styles.notice}>
+                <Text style={styles.noticeText}>
+                  Account created. We've sent a verification link to {params.registeredEmail} — verify
+                  your email, then sign in.
+                </Text>
+              </View>
+            ) : null}
             <Field
               label="Email"
               value={email}
@@ -130,6 +138,14 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  notice: {
+    padding: 12,
+    borderRadius: radius.md,
+    backgroundColor: '#ECFDF3',
+    borderWidth: 1,
+    borderColor: '#ABEFC6',
+  },
+  noticeText: { fontSize: 13, lineHeight: 19, color: '#067647' },
   flex: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40, alignItems: 'center' },
   close: { alignSelf: 'flex-start', padding: 6, marginBottom: 12 },

@@ -69,6 +69,12 @@ const useAuthStore = create(
         set({ loading: true });
         try {
           const { data } = await authAPI.register(payload);
+          // Unverified accounts get no session — the user signs in after verifying their email.
+          if (data.data?.requiresVerification) {
+            set({ loading: false });
+            toast.success(data.message || 'Account created — check your email to verify.');
+            return null;
+          }
           await AsyncStorage.setItem(TOKEN_KEY, data.token);
           set({ user: data.data, token: data.token, loading: false, authReady: true });
           toast.success('Account created successfully!');
