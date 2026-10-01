@@ -18,6 +18,7 @@ import Field from '../components/ui/Field';
 import GoogleSignInButton from '../components/auth/GoogleSignInButton';
 import useAuthStore from '../store/authStore';
 import { colors, gradients, radius, shadows } from '../theme';
+import { toMobile } from '../utils/phone';
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
@@ -117,7 +118,7 @@ export default function RegisterScreen() {
             <Field
               label="Phone"
               value={form.phone}
-              onChangeText={(t) => setField('phone', t.replace(/[^0-9]/g, '').slice(0, 10))}
+              onChangeText={(t) => setField('phone', toMobile(t))}
               placeholder="10-digit mobile number"
               keyboardType="phone-pad"
               icon="call-outline"

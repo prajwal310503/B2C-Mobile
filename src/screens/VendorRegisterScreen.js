@@ -19,6 +19,7 @@ import Field from '../components/ui/Field';
 import { vendorAPI } from '../services/api';
 import { toast } from '../store/toastStore';
 import { colors, gradients, radius, shadows } from '../theme';
+import { toMobile } from '../utils/phone';
 
 const EMPTY = {
   name: '',
@@ -151,7 +152,7 @@ export default function VendorRegisterScreen() {
             <Field
               label="Phone"
               value={form.phone}
-              onChangeText={(t) => set('phone', t.replace(/\D/g, '').slice(0, 10))}
+              onChangeText={(t) => set('phone', toMobile(t))}
               placeholder="10-digit mobile number"
               keyboardType="number-pad"
               error={errors.phone}

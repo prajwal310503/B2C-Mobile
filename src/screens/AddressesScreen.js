@@ -20,6 +20,7 @@ import { authAPI } from '../services/api';
 import useAuthStore from '../store/authStore';
 import { toast } from '../store/toastStore';
 import { colors, radius, shadows } from '../theme';
+import { toMobile } from '../utils/phone';
 
 const EMPTY = {
   label: 'Home',
@@ -232,7 +233,7 @@ export default function AddressesScreen() {
                 <Field
                   label="Phone"
                   value={String(editing?.phone || '')}
-                  onChangeText={(t) => setField('phone', t.replace(/[^0-9]/g, '').slice(0, 10))}
+                  onChangeText={(t) => setField('phone', toMobile(t))}
                   keyboardType="phone-pad"
                   error={errors.phone}
                   icon="call-outline"

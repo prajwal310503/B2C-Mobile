@@ -21,6 +21,7 @@ import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import { toast } from '../store/toastStore';
 import { colors, formatPrice, radius, shadows } from '../theme';
+import { toMobile } from '../utils/phone';
 
 const EMPTY_ADDRESS = {
   fullName: '',
@@ -273,7 +274,7 @@ export default function CheckoutScreen() {
               <Field
                 label="Phone"
                 value={String(address.phone || '')}
-                onChangeText={(t) => setField('phone', t.replace(/[^0-9]/g, '').slice(0, 10))}
+                onChangeText={(t) => setField('phone', toMobile(t))}
                 placeholder="10-digit mobile number"
                 keyboardType="phone-pad"
                 error={errors.phone}

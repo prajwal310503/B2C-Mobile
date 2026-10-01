@@ -21,14 +21,8 @@ import { authAPI } from '../services/api';
 import useAuthStore from '../store/authStore';
 import { toast } from '../store/toastStore';
 import { colors, gradients, radius, shadows } from '../theme';
+import { toMobile } from '../utils/phone';
 
-// Keep only the 10-digit mobile — drops +91 / 0 prefixes, spaces and dashes (e.g. pasted numbers)
-const toMobile = (v) => {
-  let d = String(v).replace(/\D/g, '');
-  if (d.length === 12 && d.startsWith('91')) d = d.slice(2);
-  else if (d.length === 11 && d.startsWith('0')) d = d.slice(1);
-  return d.slice(0, 10);
-};
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
