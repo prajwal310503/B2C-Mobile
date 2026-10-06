@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import RootNavigator from './src/navigation';
 import ToastHost from './src/components/ui/ToastHost';
+import PhoneRequiredModal from './src/components/auth/PhoneRequiredModal';
 import useAuthStore from './src/store/authStore';
 import { colors } from './src/theme';
 
@@ -20,6 +21,7 @@ export default function App() {
       <SafeAreaProvider>
         <StatusBar style="dark" />
         <RootNavigator />
+        <PhoneRequiredModal />
         <ToastHost />
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -89,6 +89,7 @@ export const authAPI = {
   getGoogleClientId: () => api.get('/auth/google/client-id'),
   updatePassword: (data) => api.put('/auth/update-password', data),
   updateProfile: (data) => api.put('/auth/profile', data),
+  googlePhone: (accessToken) => api.post('/auth/google/phone', { accessToken }),
   updateAddresses: (addresses) => api.put('/auth/addresses', { addresses }),
   getWishlist: () => api.get('/auth/wishlist'),
   setWishlist: (productIds) => api.put('/auth/wishlist', { productIds }),
