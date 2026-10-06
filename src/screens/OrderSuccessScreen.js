@@ -39,11 +39,11 @@ export default function OrderSuccessScreen() {
 
         <Animated.View style={[styles.textCol, { opacity: fade }]}>
           <Text style={styles.eyebrow}>Thank you</Text>
-          <Text style={styles.title}>Order Confirmed</Text>
+          {/* The app doesn't take online payment yet — orders stay pending until paid, so don't
+              tell the shopper it's confirmed or paid. */}
+          <Text style={styles.title}>Order Placed</Text>
           <Text style={styles.message}>
-            {partial
-              ? 'Your order is confirmed. Pay the remaining 50% from My Orders to start dispatch.'
-              : 'Your order is confirmed and our atelier is preparing it for dispatch.'}
+            {`Your order is saved and awaiting payment. Complete the ${partial ? '50% advance' : 'payment'} from My Orders on royalbutterfly.in to confirm it.`}
           </Text>
         </Animated.View>
 
@@ -56,7 +56,7 @@ export default function OrderSuccessScreen() {
           ) : null}
           {amount ? (
             <View style={styles.cardRow}>
-              <Text style={styles.cardLabel}>Amount paid</Text>
+              <Text style={styles.cardLabel}>Amount due</Text>
               <Text style={styles.cardValueStrong}>{formatPrice(amount)}</Text>
             </View>
           ) : null}
